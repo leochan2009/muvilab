@@ -34,6 +34,7 @@ class Annotator:
         self.screen_ratio = screen_ratio
         self.image_resize = image_resize
         self.loop_duration = loop_duration
+        self.ctrl_key_was_pressed = False
 
         # Hard coded settings
         self.timebar_h = 20  # Pixels
@@ -576,11 +577,15 @@ class Annotator:
                 
         # Select label
         if chr(key_input) in {chr(d) for d in range(ord('0'),ord('9')+1)}:
-
-            if int(chr(key_input)) > len(self.labels):
-                print('Error: label %s not implemented' % chr(key_input))
+            value = int(chr(key_input))
+            if chr(key_input) == '0':
+                value = 10
+            if self.ctrl_key_was_pressed:
+                value +=10
+            if value > len(self.labels):
+                print('Error: label %d not implemented' % value)
             else:
-                self.selected_label = int(chr(key_input))-1
+                self.selected_label = value-1
                 print('Label selected: %s' % self.labels[self.selected_label]['name'])
         
         # Reviewing mode
@@ -747,17 +752,24 @@ class Annotator:
                         run = None
                         run_this_page = False
                         break
-                    
+
                     # Show the frame
                     cv2.imshow('MuViLab', img)
-                    
+
                     # Deal with the keyboard input
                     toc = int((time.time()-tic)*1000)
                     wait = int(np.max((1, self.delay-toc)))
                     key_input = cv2.waitKey(wait)
                     if key_input == -1:
                         continue
-                    run_this_page, run = self.process_keyboard_input(key_input, run)
+                    if key_input == 0: # ctrl button is clicked
+                        self.ctrl_key_was_pressed = not self.ctrl_key_was_pressed
+                        if self.ctrl_key_was_pressed:
+                            print("ctrl clicked, the number in label will be added by 10")
+                        else:
+                            print("ctrl clicked again, the number in label will not be added")
+                    else:
+                        run_this_page, run = self.process_keyboard_input(key_input, run)
                     if not run_this_page:
                         break
             
